@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:utomik_mobile/res/style/app_colors.dart';
 
 /// Defines widgets which are to used as rating bar items.
 class RatingWidget {
@@ -86,7 +87,7 @@ class RatingBar extends StatefulWidget {
 
   /// Defines color for glow.
   ///
-  /// Default is [ColorScheme.secondary].
+  /// Default is [ThemeData.colorScheme.secondary].
   final Color? glowColor;
 
   /// Sets maximum rating
@@ -184,6 +185,8 @@ class RatingBar extends StatefulWidget {
 }
 
 class _RatingBarState extends State<RatingBar> {
+  static const double sizeBorderRadius = 100.0;
+
   double _rating = 0.0;
   bool _isRTL = false;
   double iconRating = 0.0;
@@ -224,66 +227,110 @@ class _RatingBarState extends State<RatingBar> {
 
     return Material(
       color: Colors.transparent,
-      child: Wrap(
-        alignment: WrapAlignment.start,
-        textDirection: textDirection,
-        direction: widget.direction,
-        children: List.generate(
-          widget.itemCount,
-          (index) => _buildRating(context, index),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(50)),
+        ),
+        child: Wrap(
+          textDirection: textDirection,
+          direction: widget.direction,
+          children: List.generate(
+            widget.itemCount,
+            (index) => _buildRating(context, index),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildRating(BuildContext context, int index) {
+    final ceilRating = _rating.toInt().ceil();
+    final isCurrentValue = index == ceilRating || index == 4 && ceilRating == 5;
     final ratingWidget = widget._ratingWidget;
     final item = widget._itemBuilder?.call(context, index);
     final ratingOffset = widget.allowHalfRating ? 0.5 : 1.0;
+    final boxDecorationMain = widget.ignoreGestures == false
+        ? BoxDecoration(
+            color: ceilRating >= index ? AppColors.dark2 : Colors.transparent,
+            borderRadius: _selectedBorderRadius(ceilRating, index),
+          )
+        : BoxDecoration();
+    final boxDecorationSelected = widget.ignoreGestures == false
+        ? BoxDecoration(
+            color: isCurrentValue ? AppColors.green : Colors.transparent,
+            borderRadius: BorderRadius.circular(100),
+          )
+        : BoxDecoration();
 
     Widget _ratingWidget;
 
     if (index >= _rating) {
-      _ratingWidget = _NoRatingWidget(
-        size: widget.itemSize,
-        child: ratingWidget?.empty ?? item!,
-        enableMask: ratingWidget == null,
-        unratedColor: widget.unratedColor ?? Theme.of(context).disabledColor,
+      _ratingWidget = Container(
+        decoration: boxDecorationMain,
+        child: Container(
+          decoration: boxDecorationSelected,
+          child: Padding(
+            padding: widget.itemPadding,
+            child: _NoRatingWidget(
+              size: widget.itemSize,
+              enableMask: ratingWidget == null,
+              unratedColor:
+                  widget.unratedColor ?? Theme.of(context).disabledColor,
+              child: ratingWidget?.empty ?? item!,
+            ),
+          ),
+        ),
       );
     } else if (index >= _rating - ratingOffset && widget.allowHalfRating) {
       if (ratingWidget?.half == null) {
         _ratingWidget = _HalfRatingWidget(
           size: widget.itemSize,
-          child: item!,
           enableMask: ratingWidget == null,
           rtlMode: _isRTL,
           unratedColor: widget.unratedColor ?? Theme.of(context).disabledColor,
+          child: item!,
         );
       } else {
-        _ratingWidget = SizedBox(
-          width: widget.itemSize,
-          height: widget.itemSize,
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: _isRTL
-                ? Transform(
-                    transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-                    alignment: Alignment.center,
-                    transformHitTests: false,
-                    child: ratingWidget!.half,
-                  )
-                : ratingWidget!.half,
+        _ratingWidget = Container(
+          decoration: boxDecorationMain,
+          child: Container(
+            decoration: boxDecorationSelected,
+            child: Padding(
+              padding: widget.itemPadding,
+              child: SizedBox(
+                width: widget.itemSize,
+                height: widget.itemSize,
+                child: FittedBox(
+                  child: _isRTL
+                      ? Transform(
+                          transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                          alignment: Alignment.center,
+                          transformHitTests: false,
+                          child: ratingWidget!.half,
+                        )
+                      : ratingWidget!.half,
+                ),
+              ),
+            ),
           ),
         );
       }
       iconRating += 0.5;
     } else {
-      _ratingWidget = SizedBox(
-        width: widget.itemSize,
-        height: widget.itemSize,
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: ratingWidget?.full ?? item,
+      _ratingWidget = Container(
+        decoration: boxDecorationMain,
+        child: Container(
+          decoration: boxDecorationSelected,
+          child: Padding(
+            padding: widget.itemPadding,
+            child: SizedBox(
+              width: widget.itemSize,
+              height: widget.itemSize,
+              child: FittedBox(
+                child: ratingWidget?.full ?? item,
+              ),
+            ),
+          ),
         ),
       );
       iconRating += 1.0;
@@ -315,13 +362,14 @@ class _RatingBarState extends State<RatingBar> {
         onVerticalDragEnd: _isHorizontal ? null : _onDragEnd,
         onVerticalDragUpdate: _isHorizontal ? null : _onDragUpdate,
         child: Padding(
-          padding: widget.itemPadding,
+          padding: EdgeInsets.all(0.0),
           child: ValueListenableBuilder<bool>(
             valueListenable: _glow,
             builder: (context, glow, child) {
               if (glow && widget.glow) {
                 final glowColor =
                     widget.glowColor ?? Theme.of(context).colorScheme.secondary;
+
                 return DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -348,6 +396,45 @@ class _RatingBarState extends State<RatingBar> {
         ),
       ),
     );
+  }
+
+  BorderRadius _selectedBorderRadius(int ceilRating, int index) {
+    switch (index) {
+      case 0:
+        {
+          if (ceilRating == 0) {
+            return BorderRadius.circular(sizeBorderRadius);
+          } else {
+            return BorderRadius.only(
+              topLeft: Radius.circular(sizeBorderRadius),
+              bottomLeft: Radius.circular(sizeBorderRadius),
+            );
+          }
+        }
+      case 1:
+      case 2:
+      case 3:
+        {
+          if (ceilRating == index) {
+            return BorderRadius.only(
+              topRight: Radius.circular(sizeBorderRadius),
+              bottomRight: Radius.circular(sizeBorderRadius),
+            );
+          } else {
+            return BorderRadius.zero;
+          }
+        }
+
+      case 4:
+        {
+          return BorderRadius.only(
+            topRight: Radius.circular(sizeBorderRadius),
+            bottomRight: Radius.circular(sizeBorderRadius),
+          );
+        }
+    }
+
+    return BorderRadius.zero;
   }
 
   bool get _isHorizontal => widget.direction == Axis.horizontal;
@@ -417,16 +504,14 @@ class _HalfRatingWidget extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 FittedBox(
-                  fit: BoxFit.contain,
                   child: _NoRatingWidget(
-                    child: child,
                     size: size,
                     unratedColor: unratedColor,
                     enableMask: enableMask,
+                    child: child,
                   ),
                 ),
                 FittedBox(
-                  fit: BoxFit.contain,
                   child: ClipRect(
                     clipper: _HalfClipper(
                       rtlMode: rtlMode,
@@ -438,7 +523,6 @@ class _HalfRatingWidget extends StatelessWidget {
             )
           : FittedBox(
               child: child,
-              fit: BoxFit.contain,
             ),
     );
   }
@@ -487,7 +571,6 @@ class _NoRatingWidget extends StatelessWidget {
       height: size,
       width: size,
       child: FittedBox(
-        fit: BoxFit.contain,
         child: enableMask
             ? ColorFiltered(
                 colorFilter: ColorFilter.mode(
