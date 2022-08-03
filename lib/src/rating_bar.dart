@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:utomik_mobile/res/style/app_colors.dart';
 
 /// Defines widgets which are to used as rating bar items.
 class RatingWidget {
@@ -245,19 +244,22 @@ class _RatingBarState extends State<RatingBar> {
 
   Widget _buildRating(BuildContext context, int index) {
     final ceilRating = _rating.toInt().ceil();
+    print(index);
+    print(ceilRating);
+    print('=====');
     final isCurrentValue = index == ceilRating || index == 4 && ceilRating == 5;
     final ratingWidget = widget._ratingWidget;
     final item = widget._itemBuilder?.call(context, index);
     final ratingOffset = widget.allowHalfRating ? 0.5 : 1.0;
     final boxDecorationMain = widget.ignoreGestures == false
         ? BoxDecoration(
-            color: ceilRating >= index ? AppColors.dark2 : Colors.transparent,
+            color: ceilRating >= index ? Color(0xFF332E59) : Colors.transparent,
             borderRadius: _selectedBorderRadius(ceilRating, index),
           )
         : BoxDecoration();
     final boxDecorationSelected = widget.ignoreGestures == false
         ? BoxDecoration(
-            color: isCurrentValue ? AppColors.green : Colors.transparent,
+            color: isCurrentValue ? Color(0xFF4CAF50) : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
           )
         : BoxDecoration();
@@ -347,10 +349,11 @@ class _RatingBarState extends State<RatingBar> {
             final tappedPosition = details.localPosition.dx;
             final tappedOnFirstHalf = tappedPosition <= widget.itemSize / 2;
             value = index +
-                (tappedOnFirstHalf && widget.allowHalfRating ? 0.5 : 1.0);
+                (tappedOnFirstHalf && widget.allowHalfRating ? 0.5 : 0.9);
           }
 
           value = math.max(value, widget.minRating);
+
           widget.onRatingUpdate(value);
           _rating = value;
           setState(() {});
