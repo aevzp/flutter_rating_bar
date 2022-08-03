@@ -244,9 +244,6 @@ class _RatingBarState extends State<RatingBar> {
 
   Widget _buildRating(BuildContext context, int index) {
     final ceilRating = _rating.toInt().ceil();
-    print(index);
-    print(ceilRating);
-    print('=====');
     final isCurrentValue = index == ceilRating || index == 4 && ceilRating == 5;
     final ratingWidget = widget._ratingWidget;
     final item = widget._itemBuilder?.call(context, index);
@@ -342,20 +339,23 @@ class _RatingBarState extends State<RatingBar> {
       ignoring: widget.ignoreGestures,
       child: GestureDetector(
         onTapDown: (details) {
+          final tappedPosition = details.localPosition.dx;
+          final tappedOnFirstHalf = tappedPosition <= widget.itemSize / 2;
           double value;
+
           if (index == 0 && (_rating == 1 || _rating == 0.5)) {
             value = 0;
           } else {
-            final tappedPosition = details.localPosition.dx;
-            final tappedOnFirstHalf = tappedPosition <= widget.itemSize / 2;
             value = index +
-                (tappedOnFirstHalf && widget.allowHalfRating ? 0.5 : 0.9);
+                (tappedOnFirstHalf && widget.allowHalfRating ? 0.5 : 1.0);
           }
 
           value = math.max(value, widget.minRating);
 
           widget.onRatingUpdate(value);
-          _rating = value;
+          _rating = value - (tappedOnFirstHalf && widget.allowHalfRating ? 0.0 : 0.01);
+          print(_rating);
+
           setState(() {});
         },
         onHorizontalDragStart: _isHorizontal ? _onDragStart : null,
